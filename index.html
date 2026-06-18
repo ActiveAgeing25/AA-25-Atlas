@@ -144,11 +144,11 @@
     <div class="map-wrap"><div id="map"></div></div>
   </div>
   <div>
-    <div class="section-label">Select a country</div>
+    <div class="section-label">Select one or two countries to compare</div>
     <div class="country-cards" id="cards"></div>
   </div>
   <div class="detail-panel" id="detail">
-    <div class="detail-empty">Click on a country card or map region to explore its full profile.</div>
+    <div class="detail-empty">Click on one or two country cards to explore and compare profiles.</div>
   </div>
 </div>
 
@@ -287,18 +287,39 @@ const DEMO_LABELS = {
 };
 const DEMO_UNITS = { pop65: '%', depRatio: '%', lifeExp65: ' yrs', hly65: ' yrs' };
 
-let selected = null;
+let selected = [];
+
+function toggleSelect(name) {
+  const idx = selected.indexOf(name);
+  if (idx > -1) { selected.splice(idx, 1); }
+  else if (selected.length < 2) { selected.push(name); }
+  else { selected = [selected[1], name]; }
+  renderCards(); renderPanel(); highlightMap();
+}
 
 function renderCards() {
   const c = document.getElementById('cards');
   c.innerHTML = '';
   Object.entries(DATA).forEach(([name, d]) => {
+    const isActive = selected.includes(name);
+    const orderNum = selected.indexOf(name);
     const el = document.createElement('div');
-    el.className = 'c-card' + (selected === name ? ' active' : '');
+    el.className = 'c-card' + (isActive ? ' active' : '');
     el.innerHTML = '<div class="flag">' + d.flag + '</div><div class="cname">' + name + '</div><div class="cscore" style="color:' + d.color + '">' + d.aai.toFixed(1) + '</div><div class="clabel">Overall AAI score</div>';
-    el.onclick = () => { selected = name; renderCards(); renderDetail(name); highlightMap(name); };
+    if (isActive) { el.style.boxShadow = '0 0 0 2px ' + d.color; el.style.borderColor = 'transparent'; }
+    el.onclick = () => toggleSelect(name);
     c.appendChild(el);
   });
+}
+
+function renderPanel() {
+  if (selected.length === 0) {
+    document.getElementById('detail').innerHTML = '<div class="detail-empty">Click on one or two country cards to explore and compare profiles.</div>';
+  } else if (selected.length === 1) {
+    renderDetail(selected[0]);
+  } else {
+    renderComparison(selected[0], selected[1]);
+  }
 }
 
 function renderDetail(name) {
@@ -332,10 +353,93 @@ function renderDetail(name) {
     '<div class="footnote"><strong>Methodological note:</strong> The AAI is computed from 22 indicators across four domains by UNECE and the European Commission (methodology: <a href="https://composite-indicators.jrc.ec.europa.eu/explorer/indices/aai/active-ageing-index" target="_blank">JRC Data Hub</a>). The 2018 report remains the latest comprehensive EU-wide edition; no updated AAI edition has been published as of June 2026. Domain scores are not directly comparable across the four domains as each uses a different weighting scheme. Ukraine\u2019s figures are estimated from UNECE extended reports and may not be directly comparable owing to data availability constraints and the ongoing conflict. Demographic data for EU countries from <a href="https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Population_structure_and_ageing" target="_blank">Eurostat</a>: population structure (1 Jan 2025), life expectancy at 65 (<a href="https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Mortality_and_life_expectancy_statistics" target="_blank">2024</a>), healthy life years (<a href="https://ec.europa.eu/eurostat/statistics-explained/index.php?title=Healthy_life_years_statistics" target="_blank">2023</a>). Ukraine from <a href="https://population.un.org/wpp/" target="_blank">UN Population Division</a> (2024 est.) and WHO GHO. Data last verified: June 2026.</div>';
 }
 
-function highlightMap(name) {
+function renderComparison(nameA, nameB) {
+  const a = DATA[nameA], b = DATA[nameB];
+  const p = document.getElementById('detail');
+
+  var compBars = '';
+  Object.keys(a.domains).forEach(function(label) {
+    var va = a.domains[label], vb = b.domains[label], eu = EU_AVG[label];
+    var diff = va - vb;
+    var diffLabel = diff > 0 ? ('+' + diff.toFixed(1)) : diff.toFixed(1);
+    compBars += '<div class="bar-group">' +
+      '<div class="bar-label-row"><span class="bl">' + label + '</span></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">' +
+        '<span style="font-size:11px;color:' + a.color + ';min-width:32px;text-align:right;font-weight:500;">' + va.toFixed(1) + '</span>' +
+        '<div class="bar-track" style="flex:1;position:relative;">' +
+          '<div class="bar-fill" style="width:' + va + '%;background:' + a.color + ';opacity:0.85;"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;">' +
+        '<span style="font-size:11px;color:' + b.color + ';min-width:32px;text-align:right;font-weight:500;">' + vb.toFixed(1) + '</span>' +
+        '<div class="bar-track" style="flex:1;">' +
+          '<div class="bar-fill" style="width:' + vb + '%;background:' + b.color + ';opacity:0.85;"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+        '<span style="font-size:10px;color:var(--text-tertiary);min-width:32px;text-align:right;">' + eu.toFixed(1) + '</span>' +
+        '<div class="bar-track bar-eu" style="flex:1;">' +
+          '<div class="bar-fill" style="width:' + eu + '%;background:' + (isDark ? '#888780' : '#B4B2A9') + ';"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="bar-eu-label">Gap: <strong style="color:var(--text-primary);">' + diffLabel + '</strong> · EU-28: ' + eu.toFixed(1) + '</div>' +
+      '</div>';
+  });
+
+  var compMetrics = '';
+  Object.keys(a.demo).forEach(function(key) {
+    var va = a.demo[key].v, vb = b.demo[key].v;
+    var diff = va - vb;
+    var diffStr = (diff > 0 ? '+' : '') + diff.toFixed(1);
+    var diffColor = 'var(--text-tertiary)';
+    compMetrics += '<div class="metric">' +
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;">' +
+        '<span class="mv" style="font-size:16px;color:' + a.color + '">' + va.toFixed(1) + DEMO_UNITS[key] + '</span>' +
+        '<span style="font-size:13px;font-weight:500;color:' + diffColor + '">' + diffStr + '</span>' +
+        '<span class="mv" style="font-size:16px;color:' + b.color + '">' + vb.toFixed(1) + DEMO_UNITS[key] + '</span>' +
+      '</div>' +
+      '<div class="ml">' + DEMO_LABELS[key] + '</div>' +
+      '<div class="msrc">' + a.demo[key].src + '</div>' +
+      '</div>';
+  });
+
+  var polsA = '', polsB = '';
+  a.policies.forEach(function(pol) {
+    polsA += '<a class="policy-link" href="' + pol.url + '" target="_blank" rel="noopener" style="background:' + a.color + '18;color:' + a.color + ';font-size:11px;">' + pol.name + ' (' + pol.year + ') <span class="pol-icon">\u2197</span></a>';
+  });
+  b.policies.forEach(function(pol) {
+    polsB += '<a class="policy-link" href="' + pol.url + '" target="_blank" rel="noopener" style="background:' + b.color + '18;color:' + b.color + ';font-size:11px;">' + pol.name + ' (' + pol.year + ') <span class="pol-icon">\u2197</span></a>';
+  });
+
+  p.innerHTML = '<div class="detail-header" style="border-bottom:none;padding-bottom:8px;margin-bottom:8px;">' +
+    '<div style="display:flex;align-items:center;gap:10px;flex:1;"><div class="flag">' + a.flag + '</div><div class="info"><h2 style="font-size:18px;">' + nameA + '</h2><p style="font-size:12px;">' + a.cluster + '</p></div></div>' +
+    '<div style="font-size:22px;color:var(--text-tertiary);padding:0 8px;">vs</div>' +
+    '<div style="display:flex;align-items:center;gap:10px;flex:1;justify-content:flex-end;text-align:right;"><div class="info"><h2 style="font-size:18px;">' + nameB + '</h2><p style="font-size:12px;">' + b.cluster + '</p></div><div class="flag">' + b.flag + '</div></div>' +
+    '</div>' +
+    '<div style="display:flex;justify-content:center;gap:16px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">' +
+      '<div style="text-align:center;"><span style="font-size:28px;font-weight:600;color:' + a.color + '">' + a.aai.toFixed(1) + '</span><div style="font-size:11px;color:var(--text-tertiary)">Overall AAI</div></div>' +
+      '<div style="display:flex;align-items:center;font-size:18px;font-weight:500;color:var(--text-tertiary);">' + (a.aai > b.aai ? '\u25C0' : '\u25B6') + ' ' + Math.abs(a.aai - b.aai).toFixed(1) + '</div>' +
+      '<div style="text-align:center;"><span style="font-size:28px;font-weight:600;color:' + b.color + '">' + b.aai.toFixed(1) + '</span><div style="font-size:11px;color:var(--text-tertiary)">Overall AAI</div></div>' +
+    '</div>' +
+    '<div class="charts-row"><div class="chart-box"><h3>AAI domains compared (0\u2013100)</h3>' + compBars +
+    '<div class="legend-row"><span><span class="legend-dot" style="background:' + a.color + '"></span>' + nameA + '</span><span><span class="legend-dot" style="background:' + b.color + '"></span>' + nameB + '</span><span><span class="legend-dot" style="background:' + (isDark ? '#888780' : '#B4B2A9') + '"></span>EU-28</span></div>' +
+    '</div><div class="chart-box"><h3>Demographic indicators</h3><div class="metrics-grid">' + compMetrics + '</div>' +
+    '<h3 style="margin-top:4px;">' + nameA + ' \u2014 Key policies</h3><div style="margin-top:6px;">' + polsA + '</div>' +
+    '<h3 style="margin-top:12px;">' + nameB + ' \u2014 Key policies</h3><div style="margin-top:6px;">' + polsB + '</div>' +
+    '</div></div>';
+}
+
+function highlightMap() {
   d3.selectAll('.country-path')
-    .attr('stroke-width', function(d) { return (ID_TO_COUNTRY[d.id] === name) ? 2.5 : (HIGHLIGHT_IDS.includes(d.id) ? 1.2 : 0.3); })
-    .attr('stroke', function(d) { if (ID_TO_COUNTRY[d.id] === name) return isDark ? '#fff' : '#1A1A18'; return isDark ? 'rgba(255,255,255,0.1)' : '#fff'; });
+    .attr('stroke-width', function(d) {
+      var n = ID_TO_COUNTRY[d.id];
+      return selected.includes(n) ? 2.5 : (HIGHLIGHT_IDS.includes(d.id) ? 1.2 : 0.3);
+    })
+    .attr('stroke', function(d) {
+      var n = ID_TO_COUNTRY[d.id];
+      if (selected.includes(n)) return isDark ? '#fff' : '#1A1A18';
+      return isDark ? 'rgba(255,255,255,0.1)' : '#fff';
+    });
 }
 
 d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(function(world) {
@@ -354,7 +458,7 @@ d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(f
     .attr('cursor', function(d) { return ID_TO_COUNTRY[d.id] ? 'pointer' : 'default'; })
     .on('click', function(e, d) {
       var n = ID_TO_COUNTRY[d.id];
-      if (n) { selected = n; renderCards(); renderDetail(n); highlightMap(n); document.getElementById('detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+      if (n) { toggleSelect(n); document.getElementById('detail').scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
     })
     .on('mouseenter', function(e, d) { if (ID_TO_COUNTRY[d.id]) d3.select(this).attr('opacity', 0.8); })
     .on('mouseleave', function() { d3.select(this).attr('opacity', 1); });
