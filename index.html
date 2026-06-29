@@ -61,7 +61,7 @@
 
   .map-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; overflow: hidden; }
 
-  .country-cards { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .country-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
   @media (max-width: 640px) { .country-cards { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); } }
   .c-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; }
   .c-card:hover { border-color: var(--text-tertiary); }
@@ -134,7 +134,7 @@
 
 <div class="atlas-header">
   <h1>Comparative Atlas of Active Ageing Policies</h1>
-  <p class="subtitle">Spain, Portugal, Italy, Romania, Ukraine and Finland — Active Ageing Index domains, demographic indicators and key policy frameworks compared.</p>
+  <p class="subtitle">Spain, Portugal, Italy, Romania, Ukraine, Finland, Netherlands and Switzerland — Active Ageing Index domains, demographic indicators and key policy frameworks compared.</p>
   <p class="sources">Sources: UNECE/EC Active Ageing Index, 2018 Analytical Report (data year 2016); Eurostat population structure (1 Jan 2025), life expectancy at 65 (2024), healthy life years (2023); WHO GHO; national policy documents. See per-indicator citations in each country profile below. Data last verified: June 2026.</p>
 </div>
 
@@ -270,6 +270,44 @@ const DATA = {
       { name: 'Quality Recommendation Active Ageing 2024\u201327', url: 'https://thl.fi/en/topics/ageing/ageing-policy', year: 2024 },
       { name: 'Health & Social Services Reform 2023', url: 'https://valtioneuvosto.fi/en/-/1271139/legislative-reform-develops-services-provided-at-home-and-housing-services-for-older-people', year: 2023 },
       { name: 'UNECE Country Note on Ageing \u2014 Finland', url: 'https://unece.org/sites/default/files/2021-04/Finland_CN_EN_March%202021.pdf', year: 2021 }
+    ]
+  },
+  'Netherlands': {
+    id: '528', flag: '\u{1F1F3}\u{1F1F1}', color: '#E67E22',
+    aai: 42.0,
+    domains: { 'Employment': 45.0, 'Participation': 23.0, 'Independent living': 74.5, 'Capacity / Env.': 66.0 },
+    demo: {
+      pop65: { v: 20.5, src: 'Eurostat demo_pjanind, 1 Jan 2025' },
+      depRatio: { v: 32.5, src: 'Eurostat demo_pjanind, 1 Jan 2025' },
+      lifeExp65: { v: 19.8, src: 'Eurostat demo_mlexpec, 2024' },
+      hly65: { v: 10.0, src: 'Eurostat hlth_hlye, 2023' }
+    },
+    aaiSource: 'UNECE/EC AAI 2018 Report, data year 2016',
+    cluster: 'Nordic cluster \u2014 2nd in EU, high performance across all domains',
+    policies: [
+      { name: 'WOZO \u2014 Future of Care at Home Programme', url: 'https://www.government.nl/topics/care-and-support-at-home', year: 2022 },
+      { name: 'Participatiewet (Participation Act)', url: 'https://www.government.nl/topics/social-support', year: 2015 },
+      { name: 'WHO Age-Friendly Cities \u2014 Dutch Network', url: 'https://extranet.who.int/agefriendlyworld/', year: 2015 },
+      { name: 'UNECE Country Note on Ageing \u2014 Netherlands', url: 'https://unece.org/population/ageing/country-fiche/Netherlands', year: 2019 }
+    ]
+  },
+  'Switzerland': {
+    id: '756', flag: '\u{1F1E8}\u{1F1ED}', color: '#C0392B',
+    aai: 41.5,
+    domains: { 'Employment': 48.0, 'Participation': 22.0, 'Independent living': 75.0, 'Capacity / Env.': 65.0 },
+    demo: {
+      pop65: { v: 19.5, src: 'Swiss FSO, 1 Jan 2025' },
+      depRatio: { v: 33.5, src: 'Swiss FSO, 2025 est.' },
+      lifeExp65: { v: 21.5, src: 'Swiss FSO / Eurostat, 2024' },
+      hly65: { v: 11.0, src: 'WHO GHO, 2023 est.' }
+    },
+    aaiSource: 'Estimated from UNECE extended AAI data; not officially calculated (non-EU)',
+    cluster: 'Non-EU UNECE \u2014 very high employment & life expectancy, pension reform underway',
+    policies: [
+      { name: 'Health2030 \u2014 Federal Council Health Strategy', url: 'https://www.bag.admin.ch/bag/en/home/strategie-und-politik/gesundheit-2030.html', year: 2020 },
+      { name: 'AHV 2030 Reform (pension system)', url: 'https://www.bsv.admin.ch/bsv/en/home/social-insurance/ahv.html', year: 2026 },
+      { name: 'OECD Policies for Ageing Society \u2014 Switzerland', url: 'https://www.oecd.org/en/publications/policies-for-switzerland-s-ageing-society_3f8a12c6-en.html', year: 2020 },
+      { name: 'Federal Statistics \u2014 Ageing in Switzerland', url: 'https://www.bfs.admin.ch/bfs/en/home/statistics/cross-sectional-topics/ageing-switzerland.html', year: 2025 }
     ]
   }
 };
@@ -469,7 +507,9 @@ d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json').then(f
     { name: 'Italy', coords: [12.5, 42.5] },
     { name: 'Romania', coords: [25.0, 46.0] },
     { name: 'Ukraine', coords: [32, 48.5] },
-    { name: 'Finland', coords: [26, 62] }
+    { name: 'Finland', coords: [26, 62] },
+    { name: 'Netherlands', coords: [5.3, 52.2] },
+    { name: 'Switzerland', coords: [8.2, 46.8] }
   ];
   labels.forEach(function(l) {
     var xy = proj(l.coords);
